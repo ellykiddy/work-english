@@ -1,0 +1,57 @@
+name: Bootstrap and deploy Work English
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy current Work English site
+        run: |
+          mkdir -p data
+          curl -fsSL https://raw.githubusercontent.com/ellykiddy/headless-elly/main/work-english/index.html -o index.html
+          curl -fsSL https://raw.githubusercontent.com/ellykiddy/headless-elly/main/work-english/data/lessons.json -o data/lessons.json
+      - name: Commit copied site
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html data/lessons.json
+          if git diff --cached --quiet; then
+            echo "No site changes to commit"
+          else
+            git commit -m "Bootstrap Work English site"
+            git push
+          fi
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: bootstrap
+    if: always() && (needs.bootstrap.result == 'success' || needs.bootstrap.result == 'skipped')
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
