@@ -22,40 +22,6 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Apply calmer lesson reading styles
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          p = Path('index.html')
-          s = p.read_text()
-          css = '''
-/* calmer lesson reading system */
-.lesson-head{background:var(--paper);box-shadow:none;border-color:var(--line)}
-.review{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--sun);color:var(--body)}
-.phrase{background:var(--paper);box-shadow:none;border-color:var(--line);padding:30px 28px}
-.phrase-num{background:transparent;padding:0;color:var(--brand-dark)}
-.phrase h2{margin-top:10px}
-.meaning{color:var(--body);font-size:18px;line-height:1.85}
-.example{background:var(--paper2);border:1px solid var(--line);border-left:4px solid var(--brand);padding:18px 20px}
-.example b{color:var(--brand-dark)}
-.example div{color:var(--ink);font-weight:800}
-.info-stack{gap:0;margin-top:18px;border-top:1px solid var(--line)}
-.mini{background:transparent!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important;padding:16px 0!important;color:var(--body)!important}
-.mini:last-child{border-bottom:0!important}
-.mini b{color:var(--ink)!important;font-size:12px}
-.mini span{font-size:15.5px;line-height:1.75;color:var(--body)!important}
-.practice-card{box-shadow:none;background:var(--paper);border-color:var(--line)}
-.practice-label{background:transparent;color:var(--brand-dark);padding:0;margin-bottom:12px}
-.speech{background:var(--paper2);color:var(--body);border-color:var(--line)}
-.complete{background:var(--paper);border:1px solid var(--line)}
-.lesson-row{box-shadow:none;background:var(--paper)}
-.lesson-row:hover{box-shadow:0 6px 20px rgba(45,36,80,.06)}
-@media(max-width:700px){.phrase{padding:24px 20px}.meaning{font-size:17px}.example{padding:16px}}
-'''
-          if '/* calmer lesson reading system */' not in s:
-              s = s.replace('</style>', css + '\n</style>', 1)
-          p.write_text(s)
-          PY
       - uses: actions/configure-pages@v5
         with:
           enablement: true
