@@ -2,7 +2,7 @@ name: Simplify lesson reading colors
 on:
   push:
     paths:
-      - '.github/workflows/simplify-lesson-colors.yml'
+      - .github/workflows/simplify-lesson-colors.yml
 permissions:
   contents: write
 jobs:
@@ -10,13 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Simplify lesson content colors
+      - name: Update lesson CSS
+        shell: bash
         run: |
-          python - <<'PY'
+          python3 <<'PY'
           from pathlib import Path
-          p=Path('index.html')
-          s=p.read_text()
-          css='''
+          p = Path("index.html")
+          s = p.read_text()
+          css = r'''
 /* calmer lesson reading system */
 .lesson-head{background:var(--paper);box-shadow:none;border-color:var(--line)}
 .review{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--sun);color:var(--body)}
@@ -31,10 +32,6 @@ jobs:
 .mini{background:transparent!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important;padding:16px 0!important;color:var(--body)!important}
 .mini:last-child{border-bottom:0!important}
 .mini b{color:var(--ink)!important;font-size:12px}
-.mini.use b::before{content:"✓ ";color:var(--mint)}
-.mini.avoid b::before{content:"× ";color:var(--red)}
-.mini.mistake b::before{content:"! ";color:var(--sun)}
-.mini.pron b::before{content:"♪ ";color:var(--brand)}
 .mini span{font-size:15.5px;line-height:1.75;color:var(--body)!important}
 .practice-card{box-shadow:none;background:var(--paper);border-color:var(--line)}
 .practice-label{background:transparent;color:var(--brand-dark);padding:0;margin-bottom:12px}
@@ -44,15 +41,15 @@ jobs:
 .lesson-row:hover{box-shadow:0 6px 20px rgba(45,36,80,.06)}
 @media(max-width:700px){.phrase{padding:24px 20px}.meaning{font-size:17px}.example{padding:16px}}
 '''
-          marker='</style>'
-          if '/* calmer lesson reading system */' not in s:
-              s=s.replace(marker,css+'\n'+marker,1)
+          if "/* calmer lesson reading system */" not in s:
+              s = s.replace("</style>", css + "\n</style>", 1)
           p.write_text(s)
           PY
       - name: Commit changes
+        shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name github-actions-bot
+          git config user.email github-actions-bot@users.noreply.github.com
           git add index.html
           git diff --cached --quiet || git commit -m "Simplify lesson reading colors"
           git push
