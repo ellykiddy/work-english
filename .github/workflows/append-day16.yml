@@ -1,0 +1,82 @@
+name: Append Day 16 lesson
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/append-day16.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  append:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Append Day 16 safely
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          path = Path('data/lessons.json')
+          days = json.loads(path.read_text())
+          if not any(d.get('day') == 16 for d in days):
+              days.append({
+                "day": 16,
+                "title": "Following Up Naturally",
+                "theme": "Following up on work without sounding pushy",
+                "review": "Spaced review: use ‘I’ll keep you posted’ when you owe someone an update, ‘I’m waiting on…’ for a dependency, and ‘Does that line up with what you had in mind?’ when you want to confirm alignment. Today we’ll focus on the other side of that conversation: checking back in with teammates naturally.",
+                "phrases": [
+                  {
+                    "text": "Just checking in on…",
+                    "meaning": "A friendly, low-pressure way to follow up on something you’re waiting for. It sounds much softer than demanding an update.",
+                    "use": "Use in Slack when you need a status update, decision, review, design, API change, or answer from a teammate.",
+                    "avoid": "Don’t use it repeatedly in a short period or when the other person has already given you a clear timeline. In urgent cases, be direct about the deadline instead.",
+                    "example": "Just checking in on the mobile breakpoint decision — do we have a final value now?",
+                    "mistake": "Avoid ‘I am following you up about…’. Natural options are ‘Just checking in on…’ or ‘Following up on…’.",
+                    "pronunciation": "‘checking in on’ connects smoothly: CHECK-ing-in-on. Keep ‘just’ light so the phrase sounds casual rather than demanding."
+                  },
+                  {
+                    "text": "Any update on…?",
+                    "meaning": "A short, direct way to ask whether anything has changed since the last conversation. Neutral and very common in work chat.",
+                    "use": "Use when the context is already known and you mainly need the latest status.",
+                    "avoid": "It can feel abrupt if there has been no previous conversation or if the topic is sensitive. Add context or use ‘Just checking in on…’ when you want to sound warmer.",
+                    "example": "Any update on the staging deploy? I’d like to verify the submit flow once it’s up.",
+                    "mistake": "Avoid ‘Do you have any updates about this?’ when a short Slack follow-up would do. It’s correct, but more formal and heavier.",
+                    "pronunciation": "In fast speech, ‘any update on’ often sounds like EN-ee-up-DATE-on, with the strongest stress on ‘date’."
+                  },
+                  {
+                    "text": "No rush — I just want to make sure…",
+                    "meaning": "This tells the other person the request is not urgent, while still explaining why you’re following up. It keeps the message considerate without making it vague.",
+                    "use": "Use when you genuinely do not need an immediate answer but want to prevent a task from getting forgotten or moving in the wrong direction.",
+                    "avoid": "Don’t say ‘No rush’ if there actually is a deadline. Mixed signals make prioritization harder.",
+                    "example": "No rush — I just want to make sure we’re still planning to keep the form context authoring-only before I finish the editor state changes.",
+                    "mistake": "Avoid over-softening with long phrases like ‘Sorry to bother you, whenever you have time, if possible…’. A simple ‘No rush’ is enough.",
+                    "pronunciation": "Pause slightly after ‘No rush’. Then say ‘I just wanna make sure’ naturally in speech; in writing, keep ‘want to’."
+                  }
+                ],
+                "dialogue": [
+                  ["You", "Just checking in on the table header design. Do we have the final spacing for the mobile version?"],
+                  ["Designer", "Not yet — I should have it after today’s review."],
+                  ["You", "Got it. Any update on whether Search stays visible by default?"],
+                  ["Designer", "Yes, Search stays on by default."],
+                  ["You", "Perfect. No rush — I just want to make sure I’m not building the settings around an outdated version of the design."],
+                  ["Designer", "Makes sense. I’ll send you the final spacing once it’s approved."]
+                ],
+                "exercise": [
+                  "Write a Slack follow-up using ‘Just checking in on…’ for something you’re waiting on from product, design, or backend.",
+                  "Write a short ‘Any update on…?’ message about a PR, staging deploy, API change, or decision.",
+                  "Write a message using ‘No rush — I just want to make sure…’ where the answer is helpful but not urgent.",
+                  "Bonus: combine two of today’s phrases into one natural two-sentence Slack message."
+                ]
+              })
+              path.write_text(json.dumps(days, ensure_ascii=False, separators=(',', ':')))
+          Path('.github/workflows/append-day16.yml').unlink(missing_ok=True)
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/lessons.json .github/workflows/append-day16.yml
+          git commit -m "Add Day 16 lesson"
+          git push
