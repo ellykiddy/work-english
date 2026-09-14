@@ -1,0 +1,24 @@
+name: Apply refreshed Work English UI
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace index when staged UI exists
+        run: |
+          if [ -f next-index.html ]; then
+            cp next-index.html index.html
+            rm next-index.html
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add index.html next-index.html
+            git diff --cached --quiet || git commit -m "Improve lesson reading UX and navigation icons"
+            git push
+          else
+            echo "No staged UI file found"
+          fi
