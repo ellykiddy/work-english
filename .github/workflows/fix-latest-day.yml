@@ -1,0 +1,40 @@
+name: Fix latest lesson visibility
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/fix-latest-day.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Make Today show newest lesson and bust lesson cache
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text()
+          old1 = "function renderLearn(){const ti=firstUnfinished(),t=lessons[ti],"
+          new1 = "function renderLearn(){const ti=Math.max(0,lessons.length-1),t=lessons[ti],"
+          old2 = "lessons=await fetch(DATA_URL,{cache:'no-store'})"
+          new2 = "lessons=await fetch(DATA_URL+'?v='+Date.now(),{cache:'no-store'})"
+          if old1 not in s:
+              raise SystemExit('renderLearn pattern not found')
+          if old2 not in s:
+              raise SystemExit('fetch pattern not found')
+          s = s.replace(old1, new1, 1).replace(old2, new2, 1)
+          p.write_text(s)
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Show newest lesson as Today" || exit 0
+          git push
