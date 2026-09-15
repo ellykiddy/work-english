@@ -1,0 +1,54 @@
+from pathlib import Path
+import json
+
+mixed = {
+1:{'days':[1],'dialogue':[['PM','The mobile editor is showing a second confirmation before users leave the page.'],['You','That makes sense if we are protecting unsaved work.'],['PM','Do you think we should keep both confirmations?'],['You','I am not sure we need to. We already warn them when there are unsaved changes.'],['PM','Can you check the existing flow?'],['You','Yep, I will take a look and reply in the thread.']]},
+2:{'days':[1],'dialogue':[['Designer','I want the mobile toolbar to stay visible while users edit.'],['You','Just to make sure I understand, it should stay fixed while the canvas scrolls, right?'],['Designer','Exactly.'],['You','That makes sense. What do you think about reusing the existing desktop toolbar container?'],['Designer','That could work.'],['You','I would lean toward that. I will take a look at the responsive behavior first.']]},
+3:{'days':[1,2],'dialogue':[['Teammate','The published form sometimes loses styling after refresh.'],['You','I have not dug into it yet, but it looks like the stylesheet request may be racing with the embed render.'],['Teammate','Should we rewrite the loader?'],['You','For now, I would verify the request timing first. I am not sure we need to replace the loader yet.'],['Teammate','Makes sense.'],['You','Just to make sure I understand, this only happens in the published embed, not preview, right?']]},
+4:{'days':[2,3],'dialogue':[['Reviewer','I added a new hook just for the mobile breakpoint state.'],['You','What is the reason for keeping that state separate from the existing editor state?'],['Reviewer','Mostly to isolate the logic.'],['You','I might be missing something, but could we simplify this a bit and keep one source of truth?'],['Reviewer','Probably.'],['You','I would probably keep it in the editor state for now, then revisit it if we actually reuse the hook.']]},
+5:{'days':[3,4],'dialogue':[['PM','How is the sticky table header task going?'],['You','I am wrapping up the main fix. I ran into an overflow issue in the virtualized container, but that part is resolved.'],['PM','Anything still blocking you?'],['You','I am blocked on the final empty-state behavior. Just to make sure I understand, should the header stay visible when there are zero rows?'],['PM','Yes.'],['You','Great. I will finish that path once the API response is confirmed.']]},
+6:{'days':[4,5],'dialogue':[['Teammate','We can either duplicate the mobile layout or share the same component.'],['You','The trade-off is that sharing it adds a little branching, but it keeps behavior consistent.'],['Teammate','What worries you about it?'],['You','The main downside is more conditional styling in one component.'],['Teammate','Would you still do it?'],['You','Yes, I think it is worth it. I would probably keep one component unless the mobile flow starts diverging a lot.']]},
+7:{'days':[4,6],'dialogue':[['PM','Could we add another config flag for this behavior?'],['You','I see where you are coming from. My only concern is that we would create a second source of truth.'],['PM','What would you prefer?'],['You','I would rather derive it from the existing form context. The trade-off is a little more logic in one place, but I think it is worth it.'],['PM','Okay.'],['You','Could we simplify the config and keep the behavior derived instead?']]},
+8:{'days':[3,7],'dialogue':[['Teammate','Do we need a backend change for answer piping?'],['You','From what I can tell, no. I might be missing something, but the current endpoint already returns the fields we need.'],['Teammate','What about aliases?'],['You','It looks like they are already in the contract. My only concern is how we handle duplicates.'],['Teammate','Can you verify it?'],['You','Yep. I will test the full flow and keep you posted.']]},
+9:{'days':[6,8],'dialogue':[['PM','Should v1 support templates connected to multiple forms at once?'],['You','I would keep this scoped to one active form context for now.'],['PM','Are we limiting ourselves too much?'],['You','From what I can tell, one context covers the current use cases. The main downside of multi-form support is much more state coordination.'],['PM','Fair.'],['You','We can always revisit this later. That should be enough for now.']]},
+10:{'days':[2,9],'dialogue':[['PM','For the table block, users should be able to hide Search, New row, and the title.'],['You','My understanding is that those are the only new visibility settings.'],['PM','Correct.'],['You','Just to make sure we are on the same page, they live in block.config and work in editor, preview, and published app.'],['PM','Exactly.'],['You','I would keep this scoped to those three controls. Does that line up with what you had in mind?']]},
+11:{'days':[3,8],'dialogue':[['Teammate','I found why answers disappear after tab refocus.'],['You','What did you find?'],['Teammate','We rebuild derived state with preserveInProgressAnswers set to false.'],['You','That explains why the fields reset. It turns out the fetch itself is fine.'],['Teammate','So the issue is local state?'],['You','Exactly. The issue comes down to how we rebuild it. From what I can tell, we can fix that without touching the API.']]},
+12:{'days':[6,10],'dialogue':[['Teammate','Should we add another config value to control sticky headers?'],['You','The way I see it, the table should already own the scroll in the layouts where sticky headers are supported.'],['Teammate','So what would you change?'],['You','Would it make sense to fix the height and min-height chain first?'],['Teammate','That sounds cleaner.'],['You','Once the table owns the scroll, I would expect the existing sticky logic to work. Does that line up with what you had in mind?']]},
+13:{'days':[5,8],'dialogue':[['PM','Can you finish the mobile canvas today?'],['You','I am blocked on the final breakpoint decision, so I cannot finish the sizing yet.'],['PM','Design should confirm it this afternoon.'],['You','Perfect. I am waiting on that, but I can finish the toolbar states meanwhile.'],['PM','Sounds good.'],['You','I will pick this back up once the breakpoint is confirmed, and I will keep you posted if anything else comes up.']]},
+14:{'days':[7,12],'dialogue':[['Reviewer','I changed the editor and published form to use the same mobile breakpoint constant.'],['You','One thing to watch out for is whether changing that constant later affects both surfaces in the same way.'],['Reviewer','They both reference it directly.'],['You','What happens if product wants a different editor preview width later?'],['Reviewer','Then we would need to split them.'],['You','That makes sense. I do not think this is a blocker, but would it make sense to add a small test around the shared behavior?']]},
+15:{'days':[8,10,14],'dialogue':[['You','Before I go too far down this path, I want to confirm the selected form is only editor context and should not be saved on the template.'],['Teammate','Correct. Templates stay workspace-level.'],['You','Great. From what I can tell, local editor state is enough. Am I missing something?'],['Teammate','No, that is the intended flow.'],['You','Can you sanity-check this before I open the PR? My only concern is whether another entry point expects persisted form context.'],['Teammate','Sure. I will check the entry points.']]},
+16:{'days':[8,13,15],'dialogue':[['You','Just following up on the mobile breakpoint decision. I am waiting on that before I finish the canvas sizing.'],['Designer','I should have the final value after the design review.'],['You','Sounds good. When you get a chance, can you drop it in the thread?'],['Designer','Yep.'],['You','No rush, but before I go too far down this path I want to make sure I am not building against an outdated breakpoint.'],['Designer','Makes sense. I will send the final value today.'],['You','Perfect. I will pick this back up once it is confirmed.']]}
+}
+
+p=Path('data/lessons.json')
+lessons=json.loads(p.read_text())
+for d in lessons:
+    n=int(d.get('day',0))
+    if n in mixed:
+        d['mixedDialogue']=mixed[n]['dialogue']
+        d['mixedFromDays']=mixed[n]['days']
+p.write_text(json.dumps(lessons,ensure_ascii=False,separators=(',',':')))
+
+h=Path('index.html')
+s=h.read_text()
+old='''<section class="practice"><h2>Put it into practice</h2><article class="practice-card"><h3>Workplace dialogue</h3><div class="dialogue">${d.dialogue.map(x=>`<div class="line"><div class="speaker">${esc(x[0])}</div><div class="speech">${esc(x[1])}</div></div>`).join('')}</div></article><article class="practice-card"><h3>Your exercise</h3>'''
+new='''<section class="practice"><h2>Practice in context</h2><p class="practice-intro">First see today’s 3 phrases working together. Then open the mixed review to reconnect them with phrases from earlier days.</p><details class="dialog-card" open><summary><span><b>Today’s phrases in dialogue</b><small>Use all 3 phrases from Day ${d.day}</small></span><span class="chev">⌄</span></summary><div class="dialogue dialog-body">${d.dialogue.map(x=>`<div class="line"><div class="speaker">${esc(x[0])}</div><div class="speech">${esc(x[1])}</div></div>`).join('')}</div></details><details class="dialog-card mixed"><summary><span><b>Mixed review dialogue</b><small>${d.mixedFromDays?.length?`Reinforces Day ${d.mixedFromDays.join(', ')} + today`:'Connect today with earlier lessons'}</small></span><span class="chev">⌄</span></summary><div class="dialogue dialog-body">${(d.mixedDialogue||d.dialogue).map(x=>`<div class="line"><div class="speaker">${esc(x[0])}</div><div class="speech">${esc(x[1])}</div></div>`).join('')}</div></details><article class="practice-card"><h3>Your exercise</h3>'''
+if old not in s:
+    raise SystemExit('dialogue block not found')
+s=s.replace(old,new,1)
+css='''
+.practice-intro{margin:-8px 0 18px;color:var(--body);font-size:15px;line-height:1.7;max-width:680px}
+.dialog-card{margin-top:12px;border:1px solid var(--line);border-radius:16px;background:var(--paper);overflow:hidden}
+.dialog-card summary{list-style:none;cursor:pointer;padding:16px 18px;display:flex;justify-content:space-between;gap:16px;align-items:center}
+.dialog-card summary::-webkit-details-marker{display:none}
+.dialog-card summary b{display:block;font-size:16px;color:var(--ink)}
+.dialog-card summary small{display:block;margin-top:3px;color:var(--muted);font-size:12px;line-height:1.4}
+.dialog-card .chev{color:var(--brandDark);font-size:20px;transition:transform .18s}
+.dialog-card[open] .chev{transform:rotate(180deg)}
+.dialog-card.mixed summary{border-left:4px solid var(--brand)}
+.dialog-body{padding:2px 18px 18px}
+.dialog-card[open] summary{border-bottom:1px solid var(--line);margin-bottom:14px}
+@media(max-width:700px){.dialog-card summary{padding:14px 15px}.dialog-body{padding:0 15px 15px}}
+'''
+s=s.replace('</style>',css+'\n</style>',1)
+h.write_text(s)
